@@ -1,0 +1,45 @@
+---
+- hosts: all
+  tasks:
+    - name: "Check all required variables are defined"
+      fail:
+        msg: "{{ item }} is not defined. Typically you should run with: '-e {{ item }}=value'"
+      when:
+        - ansible_env[item] is not defined
+      with_items:
+        - "OCELOT_TIMEZONE"
+        - "OCELOT_DB_USER"
+        - "OCELOT_DB_HOST"
+        - "OCELOT_DB_PORT"
+    - name: "Create folders"
+      file:
+        name:  "{{ item.name }}"
+        state: "directory"
+        owner: "{{ ansible_env.USER | default('docker') }}"
+        group: "{{ ansible_env.GROUP | default(ansible_env.USER | default('docker')) }}"
+        mode:  "{{ item.mode | default('0755') }}"
+      with_items:
+        - name: "{{ ansible_env.OCELOT_CONFIG | default('/var/lib/' + (ansible_env.USER | default('docker')) + '/.config/ocelot') }}"
+    - name: "Set timezone to {{ ansible_env.OCELOT_TIMEZONE }}"
+      file:
+        state: "link"
+        dest:  "/etc/localtime"
+        src:   "/usr/share/zoneinfo/{{ ansible_env.OCELOT_TIMEZONE }}"
+        force: "yes"
+    - template:
+        src: "{{ item.name }}.j2"
+        dest: "{{ item.path }}/{{ item.name }}"
+        owner:  "{{ ansible_env.USER | default('docker') }}"
+        group: "{{ ansible_env.GROUP | default(ansible_env.USER | default('docker')) }}"
+        mode:  "{{ item.mode | default('0644') }}"
+      with_items:
+        - name: "ocelot-entrypoint.sh"
+          path: "/usr/local/bin"
+          mode: "0755"
+        - name: "ocelot.conf"
+          path: "{{ ansible_env.OCELOT_CONFIG | default('/var/lib/' + (ansible_env.USER | default('docker')) + '/.config/ocelot') }}"
+          mode: "0644"
+    - wait_for:
+        host:  "{{ ansible_env.OCELOT_DB_HOST }}"
+        port:  "{{ ansible_env.OCELOT_DB_PORT }}"
+        sleep: 60

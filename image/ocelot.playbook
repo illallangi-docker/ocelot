@@ -1,0 +1,18 @@
+---
+- hosts: all
+  tasks:
+    - yum:
+        name:  "{{ item }}"
+        state: "present"
+      with_items:
+        - "boost-iostreams"
+        - "boost-system"
+        - "libev"
+        - "mysql++"
+    - file:
+        path:  "/usr/local/bin/{{ item }}"
+        owner: "root"
+        group: "root"
+        mode:  "0755"
+      with_items:
+        - "ocelot"

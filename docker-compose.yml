@@ -1,0 +1,14 @@
+version: '2.0'
+services:
+  web:
+    build: .
+    ports:
+      - 8100:8100
+    depends_on:
+      - db
+    env_file:
+      - docker-compose.env
+  db:
+    image: healthcheck/mariadb:latest
+    env_file:
+      - docker-compose.env

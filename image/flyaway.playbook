@@ -1,0 +1,37 @@
+---
+- hosts: all
+  tasks:
+    - get_url:
+        url:      "{{ item.url }}"
+        dest:     "{{ item.dest }}"
+        checksum: "sha256:{{ item.sha256 }}"
+      with_items:
+          - url:    "https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/{{ ansible_env.FLYWAY_VERSION }}/flyway-commandline-{{ ansible_env.FLYWAY_VERSION }}-linux-x64.tar.gz"
+            dest:   "/usr/local/src/flyway-commandline-{{ ansible_env.FLYWAY_VERSION }}-linux-x64.tar.gz"
+            sha256: "{{ ansible_env.FLYWAY_SHA256 }}"
+    - file:
+        path:  "{{ item }}"
+        state: "directory"
+      with_items:
+        - "/var/lib/flyway/"
+    - unarchive:
+        src:     "{{ item.src }}"
+        dest:    "{{ item.dest }}"
+        creates: "{{ item.dest }}{{ item.creates }}"
+        extra_opts: ['--strip-components=1']
+      with_items:
+        - src:     "/usr/local/src/flyway-commandline-{{ ansible_env.FLYWAY_VERSION }}-linux-x64.tar.gz"
+          dest:    "/var/lib/flyway/"
+          creates: "README.txt"
+    - file:
+        path:  "{{ item }}"
+        state: "file"
+        mode:  "0755"
+      with_items:
+        - "/var/lib/flyway/flyway"
+    - copy:
+        src:  "{{ item.name }}"
+        dest: "{{ item.path }}{{ item.name }}"
+      with_items:
+        - name: "sql/"
+          path: "/var/lib/flyway/"

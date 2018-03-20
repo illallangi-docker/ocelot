@@ -1,0 +1,32 @@
+---
+- hosts: all
+  tasks:
+    - yum:
+        name:  "{{ item }}"
+        state: "present"
+      with_items:
+        - "boost-devel"
+        - "gcc"
+        - "gcc-c++"
+        - "libev-devel"
+        - "make"
+        - "mysql++-devel"
+        - "unzip"
+    - get_url:
+        url:      "https://github.com/WhatCD/Ocelot/archive/{{ ansible_env.OCELOT_VERSION }}.zip"
+        dest:     "/usr/local/src/Ocelot-{{ ansible_env.OCELOT_VERSION }}.zip"
+        checksum: "sha256:{{ ansible_env.OCELOT_SHA256 }}"
+    - unarchive:
+        src:     "/usr/local/src/Ocelot-{{ ansible_env.OCELOT_VERSION }}.zip"
+        dest:    "/usr/local/src/"
+        creates: "/usr/local/src/Ocelot-{{ ansible_env.OCELOT_VERSION }}/README.md"
+    - command:
+        "{{ item.command }}"
+      args:
+        chdir: "/usr/local/src/Ocelot-{{ ansible_env.OCELOT_VERSION }}"
+        creates: "{{ item.creates }}"
+      with_items:
+        - command: "./configure"
+          creates: "/usr/local/src/Ocelot-{{ ansible_env.OCELOT_VERSION }}/Makefile"
+        - command: "make"
+          creates: "/usr/local/src/Ocelot-{{ ansible_env.OCELOT_VERSION }}/ocelot"
